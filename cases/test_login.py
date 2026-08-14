@@ -1,11 +1,9 @@
-from sys import excepthook
-
 from playwright.sync_api import expect
 from pages.login_page import LoginPage
 
 
 class TestLogin:
-    """登录测试页面"""
+    """登录页面"""
 
     def test_01_login_success(self, page):
         """登录成功-已注册的1位非特殊字符账号 + 6位正确密码"""
@@ -44,7 +42,7 @@ class TestLogin:
         expect(login.page).to_have_title("首页")
         expect(login.page).to_have_url("/index.html")
 
-    def test_04_login_fail_username_null(self, page):
+    def test_04_login_fail_username_empty(self, page):
         """登录失败-用户名为空"""
         # 创建登录页面对象
         login = LoginPage(page)
@@ -78,7 +76,7 @@ class TestLogin:
         # 打开网页
         login.open_url("/login.html")
         # 登录操作
-        login.fill_username("---")
+        login.fill_username("-------")
         login.fill_password("123456")
         # 断言
         expect(login.page.locator(LoginPage.username_tip3)).to_be_visible()
@@ -113,7 +111,7 @@ class TestLogin:
         expect(login.page.locator(LoginPage.password_tip3)).to_contain_text("密码6-16位字符")
         expect(login.page.locator(LoginPage.login_btn)).not_to_be_enabled()
 
-    def test_09_login_fail_password_null(self, page):
+    def test_09_login_fail_password_empty(self, page):
         """登录失败-密码为空"""
         # 创建登录页面对象
         login = LoginPage(page)
