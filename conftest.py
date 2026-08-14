@@ -1,8 +1,8 @@
-from playwright.sync_api import sync_playwright
 from pytest import Item
+from playwright.sync_api import BrowserType
+from typing import Any, Dict
 import allure
 import pytest
-from typing import Dict
 
 # 本地插件注册
 pytest_plugins = ['plugins.pytest_playwright', 'plugins.pytest_base_url_plugin']
@@ -16,18 +16,16 @@ def pytest_runtest_call(item: Item):
     if item.function.__doc__:
         allure.dynamic.title(item.function.__doc__)
 
-@pytest.fixture(scope="function")
-def page():
-    """
-    启动浏览器，并返回page对象
-    """
-    with sync_playwright() as p:
-        # 启动chrome浏览器,显示界面，需要开启最大化
-        browser = p.chromium.launch(headless=False, args=["--start-maximized"])
-        # 创建浏览器上下文（独立浏览器环境，不污染其他账号/数据），不显示窗口大小
-        context = browser.new_context(no_viewport=True)
-        # 创建浏览器窗口
-        page = context.new_page()
-        yield page  # 返回page对象
-        # 关闭浏览器
-        browser.close()
+
+@pytest.fixture(scope="session")
+def browser_type_launch_args(pytestconfig: Any) -> Dict:
+    """覆盖官方插件的配置，添加窗口最大化参数"""
+    launch_options = {}
+    headed_option = pytestconfig.getoption("--headed")
+    if headed_option:
+        launch_options["headless"] = False
+    else:
+        launch_options["headless"] = False  # 默认显示浏览器窗口
+    # 添加窗口最大化
+    launch_options["args"] = ["--start-maximized"]
+    return launch_options
