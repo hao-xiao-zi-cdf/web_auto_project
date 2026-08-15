@@ -23,7 +23,7 @@ class TestRegister:
         """注册成功-未注册的1位非特殊字符账号 + 6位正确密码"""
         
         # 进行注册操作
-        self.register.register("q", "123456")
+        self.register.register(uuid.uuid4().hex[:1], "123456")
         # 断言
         expect(self.register.page).to_have_title("首页")
         expect(self.register.page).to_have_url("index.html")
@@ -32,7 +32,7 @@ class TestRegister:
         """注册成功-未注册的10位非特殊字符账号 + 10位正确密码"""
         
         # 注册操作
-        self.register.register("123456789q", "1234567890")
+        self.register.register(uuid.uuid4().hex[:10], "1234567890")
         # 断言
         expect(self.register.page).to_have_title("首页")
         expect(self.register.page).to_have_url("index.html")
@@ -41,7 +41,7 @@ class TestRegister:
         """注册成功-未注册的30位非特殊字符账号 + 16位正确密码"""
 
         # 注册操作
-        self.register.register("123456789p123456789p123456789q", "1234567890123456")
+        self.register.register(uuid.uuid4().hex[:30], "1234567890123456")
         # 断言
         expect(self.register.page).to_have_title("首页")
         expect(self.register.page).to_have_url("/index.html")

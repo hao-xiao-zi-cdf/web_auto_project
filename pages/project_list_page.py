@@ -1,3 +1,4 @@
+import allure
 from playwright.sync_api import Page
 
 
@@ -30,22 +31,28 @@ class ProjectListPage:
         self.locator_boot_box = page.locator('.bootbox-body')
         self.locator_boot_box_accept = page.get_by_text("确定删除")
         self.locator_boot_box_dismiss = page.get_by_text("取消操作")
+        # 项目列表文字
+        self.locator_panel_heading_project_list = self.page.locator('.panel-heading')
 
     # 单个操作
     def navigate(self):
         self.page.goto("/list_project.html")
 
     def click_add_project(self):
-        self.locator_add_project.click()
+        with allure.step('点击添加项目按钮'):
+            self.locator_add_project.click()
 
     def search_project(self, name):
-        self.locator_search_project.fill(name)
+        with allure.step('搜索框输入项目名称'):
+            self.locator_search_project.fill(name)
 
     def click_search_button(self):
-        self.locator_search_button.click()
+        with allure.step('点击搜索按钮'):
+            self.locator_search_button.click()
 
     def click_refresh(self):
-        self.locator_refresh.click()
+        with allure.step('点击刷新'):
+            self.locator_refresh.click()
 
     # 完整操作
     def add_project(self, name, app, desc):

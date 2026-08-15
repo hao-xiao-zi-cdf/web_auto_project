@@ -122,7 +122,7 @@ class TestEnvList:
         expect(self.env.locator_modal_simple_desc_tip).to_be_visible()
         expect(self.env.locator_modal_simple_desc_tip).to_contain_text('最大100位字符')
 
-    def test_11_click_cancel_button(self):
+    def test_11_add_env_click_cancel_button(self):
         """点击取消按钮返回上一页"""
         self.env.click_add_env()
         expect(self.env.locator_add_modal).not_to_be_hidden()

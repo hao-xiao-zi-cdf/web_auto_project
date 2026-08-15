@@ -85,7 +85,7 @@ class TestAddProject:
         [uuid.uuid4().hex[:1] + "！@#￥%^&*()", "test", "test"],
         ["test", uuid.uuid4().hex[:31], "test"],
         ["test", uuid.uuid4().hex[:1] + "！@#￥%^&*()", "test"],
-        ["test", "test", "." * 200]
+        ["test", "test", "." * 300]
     ])
     def test_09_add_project_fail_5(self, name, app, desc):
         """参数化-"""
