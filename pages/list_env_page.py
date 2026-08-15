@@ -36,6 +36,9 @@ class EnvListPage:
         self.locator_modal_address_tip3 = self.locator_add_modal.locator(
             '[data-fv-validator="regexp"][data-fv-for="base_url"]'
         )
+        self.locator_modal_simple_desc_tip = self.locator_add_modal.locator(
+            '[data-fv-validator="stringLength"][data-fv-for="simple_desc"]'
+        )
         # boot_box 提示语
         self.locator_boot_box = page.locator('.bootbox-body')
 
@@ -75,3 +78,9 @@ class EnvListPage:
     #
     # def click_refresh(self) -> None:
     #     self.locator_refresh.click()
+    # 完整操作
+    def add_env(self, env_name, env_address, env_desc) -> None:
+        with allure.step(f'添加环境: {env_name}'):
+            self.input_env_name(env_name)
+            self.input_env_address(env_address)
+            self.input_env_desc(env_desc)

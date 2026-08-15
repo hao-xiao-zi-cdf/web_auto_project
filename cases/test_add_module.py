@@ -64,7 +64,7 @@ class TestAddModule:
     #
     # def test_07_add_module_fail_desc_len_101(self):
     #     """新增模块失败-项目描述101位数字符"""
-    #     self.add_module.add_module(uuid.uuid4().hex[:10], "test", "....................................................................................................................................................................")
+    #     self.add_module.add_module(uuid.uuid4().hex[:10], "test", "." * 200)
     #     # 断言
     #     expect(self.add_module.locator_save_button).to_be_disabled()
 
@@ -72,7 +72,7 @@ class TestAddModule:
             [uuid.uuid4().hex[:31], "test", "项目描述"],
             [uuid.uuid4().hex[:1] + "！@#￥%^&*()", "test", "项目描述"],
             [uuid.uuid4().hex[:10], "", "项目描述"],
-            [uuid.uuid4().hex[:10], "test", "............................................................................................................................................." + "..................................................................................................................................."]
+            [uuid.uuid4().hex[:10], "test", "." * 200]
         ])
     def test_08_add_module_fail_desc_len_101(self, module_name,module_value, module_desc):
         """参数化"""

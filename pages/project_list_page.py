@@ -48,4 +48,7 @@ class ProjectListPage:
         self.locator_refresh.click()
 
     # 完整操作
-
+    def add_project(self, name, app, desc):
+        self.locator_modal_project_name.fill(name)
+        self.locator_modal_app.fill(app)
+        self.locator_modal_desc.fill(desc)

@@ -170,7 +170,7 @@ mock_add_env_400 = {
     "handler": lambda route: route.fulfill(
         status=400,
         body=json.dumps({
-            "errors": {"env_name": "env_name: py1 已存在"},
+            "errors": {"env_name": "env_name: test 已存在"},
             "message": "Input payload validation failed"
         })
     )
