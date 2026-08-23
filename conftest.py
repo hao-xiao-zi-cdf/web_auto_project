@@ -25,7 +25,7 @@ def browser_type_launch_args(pytestconfig: Any) -> Dict:
     if headed_option:
         launch_options["headless"] = False
     else:
-        launch_options["headless"] = False  # 默认显示浏览器窗口
+        launch_options["headless"] = True  # 默认显示浏览器窗口
     # 添加窗口最大化
     launch_options["args"] = ["--start-maximized"]
     return launch_options
