@@ -1,6 +1,22 @@
-allure-pytest
-allure-python-commons
-playwright
-pytest
-python-slugify
-requests
+# Web UI 自动化测试框架依赖清单
+# 安装：pip install -r requirements.txt
+
+# 测试框架与浏览器驱动
+pytest==9.1.1
+playwright==1.62.0
+
+# 测试报告
+allure-pytest==2.16.0
+allure-python-commons==2.16.0
+
+# 配置读取（config/config.yaml）
+PyYAML==6.0.3
+
+# HTTP 请求：钉钉/飞书机器人推送、base-url 校验
+requests==2.34.2
+
+# Jenkins 构建信息查询与通知增强
+python-jenkins==1.8.3
+
+# allure 报告附件命名（用例 nodeid 转安全文件名）
+python-slugify==8.0.4
