@@ -2,7 +2,7 @@ from pages.add_project_page import AddProjectPage
 from playwright.sync_api import expect, Page
 import pytest
 import uuid
-from mocks import mock_api
+from data import mock_api
 from utils.recordlog import logs
 
 class TestAddProject:

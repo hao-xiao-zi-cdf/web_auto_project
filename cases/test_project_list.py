@@ -4,7 +4,7 @@ from time import sleep
 import pytest
 from pages.project_list_page import ProjectListPage, Page
 from playwright.sync_api import expect
-from mocks import mock_api
+from data import mock_api
 from utils.recordlog import logs
 
 

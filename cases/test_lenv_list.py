@@ -1,7 +1,7 @@
 from playwright.sync_api import expect, Page
 import pytest
 import uuid
-from mocks import mock_api
+from data import mock_api
 from pages.list_env_page import EnvListPage
 from utils.recordlog import logs
 

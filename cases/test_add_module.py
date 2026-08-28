@@ -3,7 +3,7 @@ import uuid
 from pages.add_module_page import AddModulePage
 from playwright.sync_api import expect, Page
 import pytest
-from mocks import mock_api
+from data import mock_api
 from utils.recordlog import logs
 
 class TestAddModule:

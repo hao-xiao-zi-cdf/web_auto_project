@@ -153,14 +153,14 @@ pytest --base-url=http://你的环境地址
 
 ## 七、接口 Mock 说明
 
-`mocks/mock_api.py` 中以字典形式定义 Mock（url + handler），用例中通过 `page.route()` 拦截请求：
+`data/mock_api.py` 中以字典形式定义 Mock（url + handler），用例中通过 `page.route()` 拦截请求：
 
 ```python
-from mocks.mock_api import mock_project_400
+from data.mock_api import mock_project_400
 
 page.route(mock_project_400["url"], mock_project_400["handler"])
 # ... 执行页面操作，接口将返回模拟的400响应 ...
-page.unroute(mock_project_400["url"])   # 用例结束解除mock
+page.unroute(mock_project_400["url"])  # 用例结束解除mock
 ```
 
 新增 Mock 时参照现有格式：`url` 为 glob 匹配模式（如 `**/api/project`），
