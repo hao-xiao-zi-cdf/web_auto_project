@@ -5,6 +5,7 @@ import hmac
 import hashlib
 import base64
 from config.operationConfig import OperationConfig
+from utils.recordlog import logs
 
 # 读取钉钉机器人配置
 _config = OperationConfig()
@@ -46,5 +47,14 @@ def send_dd_msg(content_str, at_all=True):
         "text": {"content": content_str},
         "at": {"isAtAll": at_all}
     }
-    res = requests.post(url, json=data, headers=headers)
-    return res.text
+    try:
+        res = requests.post(url, json=data, headers=headers)
+        # 钉钉接口返回 errcode 为 0 时才表示推送成功（HTTP 200 不代表推送成功）
+        if res.json().get('errcode') == 0:
+            logs.info(f"钉钉通知推送成功，响应：{res.text}")
+        else:
+            logs.error(f"钉钉通知推送失败，响应：{res.text}")
+        return res.text
+    except Exception as e:
+        logs.error(f"钉钉通知推送异常：{e}")
+        return ''

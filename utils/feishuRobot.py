@@ -4,6 +4,7 @@ import hashlib
 import base64
 import requests
 from config.operationConfig import OperationConfig
+from utils.recordlog import logs
 
 # 读取飞书机器人配置
 _config = OperationConfig()
@@ -48,5 +49,15 @@ def send_feishu_msg(content_str, at_all=True):
         "content": {"text": content_str}
     }
     headers = {'Content-Type': 'application/json;charset=utf-8'}
-    res = requests.post(WEBHOOK_URL, json=data, headers=headers)
-    return res.json()
+    try:
+        res = requests.post(WEBHOOK_URL, json=data, headers=headers)
+        res_json = res.json()
+        # 飞书接口新旧版本返回字段不同：新版为 code，旧版为 StatusCode，为 0 时才表示推送成功
+        if res_json.get('code', res_json.get('StatusCode')) == 0:
+            logs.info(f"飞书通知推送成功，响应：{res_json}")
+        else:
+            logs.error(f"飞书通知推送失败，响应：{res_json}")
+        return res_json
+    except Exception as e:
+        logs.error(f"飞书通知推送异常：{e}")
+        return {}

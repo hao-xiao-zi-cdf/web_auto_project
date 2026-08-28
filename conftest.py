@@ -53,7 +53,7 @@ def pytest_terminal_summary(terminalreporter, exitstatus, config):
         f"跳过执行数量：{skipped}\n"
         f"执行总时长：{duration}"
     )
-    print(summary)
+    logs.info(f"测试执行完成，结果摘要：\n{summary}")
 
     # Jenkins 构建信息增强：追加构建编号与报告链接，方便收到通知后直接点击查看
     # 本地运行或 Jenkins 不可达时查询会失败，捕获后降级为普通通知，不影响测试流程

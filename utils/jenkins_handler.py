@@ -1,6 +1,7 @@
 import re
 import jenkins
 from config.operationConfig import OperationConfig
+from utils.recordlog import logs
 
 class JenkinsHandler:
     """Jenkins 操作类，封装构建查询、状态获取、测试报告统计等功能"""
@@ -49,6 +50,7 @@ class JenkinsHandler:
         # python-jenkins 1.x 无 get_job_url 方法，改用 get_job_info 的 url 字段（新旧版本均兼容）
         job_url = self.__server.get_job_info(self.job_name)['url']
         build_url = f'{job_url}{build_num}/'
+        logs.info(f"查询 Jenkins 构建信息成功：第{build_num}次，构建地址：{build_url}")
         return {
             'build_number': build_num,
             'build_url': build_url,

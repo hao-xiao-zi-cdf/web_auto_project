@@ -6,6 +6,7 @@ import allure
 import os
 from slugify import slugify
 from typing import Dict
+from utils.recordlog import logs
 
 def _build_artifact_test_folder(pytestconfig: Any, request: pytest.FixtureRequest, folder_or_file_name: str) -> str:
     """"根据用例ID,构建截图或视频的存储路径"""
@@ -17,7 +18,7 @@ def _build_artifact_test_folder(pytestconfig: Any, request: pytest.FixtureReques
 @pytest.fixture(scope="session")
 def pre_login(context, base_url, pytestconfig) -> None:
     """有些网站网页关闭cookie就失效了，全局登录一次"""
-    print("base_url----", base_url)
+    logs.info(f"全局预登录，测试环境 base_url：{base_url}")
     page = context.new_page()
     LoginPage(page).page.goto("/login.html")
     LoginPage(page).login("p", "123456")
@@ -49,14 +50,14 @@ def unlogin_page(fresh_context: BrowserContext, pytestconfig: Any, request: pyte
     # 截图判断
     screenshot_option = pytestconfig.getoption("--screenshot")
     capture_screenshot = screenshot_option == "on" or (failed and screenshot_option == "only-on-failure")
-    print(f"capture_screenshot:{capture_screenshot}")
+    logs.debug(f"是否需要截图：{capture_screenshot}")
     if capture_screenshot:
         for index, page in enumerate(pages):
             human_readable_status = "failed" if failed else "finished"
             screenshot_path = _build_artifact_test_folder(
                 pytestconfig, request, f"test-{human_readable_status}-{index + 1}.png"
             )
-            print(f'-----------------{screenshot_path}')
+            logs.info(f"保存用例截图：{screenshot_path}")
             try:
                 page.screenshot(timeout=5000, path=screenshot_path)
                 # 把截图放入allure报告
@@ -64,8 +65,8 @@ def unlogin_page(fresh_context: BrowserContext, pytestconfig: Any, request: pyte
                                    name=f"{request.node.name}-{human_readable_status}-{index + 1}",
                                    attachment_type=allure.attachment_type.PNG
                                    )
-            except Error:
-                pass
+            except Error as e:
+                logs.warning(f"保存截图失败：{screenshot_path}，原因：{e}")
     page.close()
     # 用例添加视频
     video_option = pytestconfig.getoption("--video")
@@ -83,6 +84,6 @@ def unlogin_page(fresh_context: BrowserContext, pytestconfig: Any, request: pyte
                 # 放入视频
                 allure.attach.file(file_path, name=f"{request.node.name}-{human_readable_status}-{index + 1}",
                                    attachment_type=allure.attachment_type.WEBM)
-            except Error:
-                # Silent catch empty videos.
-                pass
+            except Error as e:
+                # 空视频静默捕获，仅记录警告日志，不影响用例结果
+                logs.warning(f"保存录屏失败：{file_name}，原因：{e}")

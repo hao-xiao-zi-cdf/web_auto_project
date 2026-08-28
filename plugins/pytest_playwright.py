@@ -30,6 +30,7 @@ from playwright.sync_api import (
 from slugify import slugify
 import tempfile
 import allure
+from utils.recordlog import logs
 
 artifacts_folder = tempfile.TemporaryDirectory(prefix="playwright-pytest-")
 
@@ -223,7 +224,7 @@ def context(
     # If requst.node is missing rep_call, then some error happened during execution
     # that prevented teardown, but should still be counted as a failure
 
-    print(f'----------{hasattr(request.node, "rep_call")}')
+    logs.debug(f"用例 rep_call 是否存在：{hasattr(request.node, 'rep_call')}")
     failed = request.node.rep_call.failed if hasattr(request.node, "rep_call") else True
 
     if capture_trace:
@@ -237,19 +238,18 @@ def context(
             context.tracing.stop()
 
     screenshot_option = pytestconfig.getoption("--screenshot")
-    print(f"xxxxxxxxxxx:{screenshot_option}")
-    print(f"xxxxxxxxxxx:{failed}")
+    logs.debug(f"截图配置：{screenshot_option}，用例是否失败：{failed}")
     capture_screenshot = screenshot_option == "on" or (
             failed and screenshot_option == "only-on-failure"
     )
-    print(f"capture_screenshot:{capture_screenshot}")
+    logs.debug(f"是否需要截图：{capture_screenshot}")
     if capture_screenshot:
         for index, page in enumerate(pages):
             human_readable_status = "failed" if failed else "finished"
             screenshot_path = _build_artifact_test_folder(
                 pytestconfig, request, f"test-{human_readable_status}-{index + 1}.png"
             )
-            print(f'-----------------{screenshot_path}')
+            logs.info(f"保存用例截图：{screenshot_path}")
             try:
                 page.screenshot(timeout=5000, path=screenshot_path)
                 # 把截图放入allure报告
@@ -258,8 +258,8 @@ def context(
                                    attachment_type=allure.attachment_type.PNG
                                    )
 
-            except Error:
-                pass
+            except Error as e:
+                logs.warning(f"保存截图失败：{screenshot_path}，原因：{e}")
 
     context.close()
 
@@ -304,14 +304,14 @@ def page(context: BrowserContext,
     capture_screenshot = screenshot_option == "on" or (
             failed and screenshot_option == "only-on-failure"
     )
-    print(f"capture_screenshot:{capture_screenshot}")
+    logs.debug(f"是否需要截图：{capture_screenshot}")
     if capture_screenshot:
         for index, page in enumerate(pages):
             human_readable_status = "failed" if failed else "finished"
             screenshot_path = _build_artifact_test_folder(
                 pytestconfig, request, f"test-{human_readable_status}-{index + 1}.png"
             )
-            print(f'-----------------{screenshot_path}')
+            logs.info(f"保存用例截图：{screenshot_path}")
             try:
                 page.screenshot(timeout=5000, path=screenshot_path)
                 # 把截图放入allure报告
@@ -320,8 +320,8 @@ def page(context: BrowserContext,
                                    attachment_type=allure.attachment_type.PNG
                                    )
 
-            except Error:
-                pass
+            except Error as e:
+                logs.warning(f"保存截图失败：{screenshot_path}，原因：{e}")
 
     page.close()
 
