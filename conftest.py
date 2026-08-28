@@ -102,17 +102,17 @@ def pytest_terminal_summary(terminalreporter, exitstatus, config):
 
     # Jenkins 构建信息增强：追加构建编号与报告链接，方便收到通知后直接点击查看
     # 本地运行或 Jenkins 不可达时查询会失败，捕获后降级为普通通知，不影响测试流程
-    if JENKINS_ENHANCE:
-        try:
-            from utils.jenkins_handler import JenkinsHandler
-            build_info = JenkinsHandler().get_build_enhance_info()
-            summary += (
-                f"\n构建编号：第{build_info['build_number']}次"
-                f"\n构建地址：{build_info['build_url']}"
-                f"\nAllure 报告：{build_info['allure_url']}"
-            )
-        except Exception as e:
-            logs.error(f'查询 Jenkins 构建信息失败，降级发送普通通知：{e}')
+    # if JENKINS_ENHANCE:
+    #     try:
+    #         from utils.jenkins_handler import JenkinsHandler
+    #         build_info = JenkinsHandler().get_build_enhance_info()
+    #         summary += (
+    #             f"\n构建编号：第{build_info['build_number']}次"
+    #             f"\n构建地址：{build_info['build_url']}"
+    #             f"\nAllure 报告：{build_info['allure_url']}"
+    #         )
+    #     except Exception as e:
+    #         logs.error(f'查询 Jenkins 构建信息失败，降级发送普通通知：{e}')
 
     if DD_MSG:
         send_dd_msg(summary)
