@@ -1,0 +1,40 @@
+# 放业务运行所需的环境数据——接口地址、数据库账号、机器人密钥，随环境变化
+
+# 测试环境配置
+environment:
+  type: 测试环境
+  project: UI调试平台WEB自动化项目
+  description: 这是一个测试环境配置文件
+
+# MySQL 数据库配置
+MYSQL:
+  host: http://127.0.0.1
+  port: 3306
+  username: root
+  password: root
+  database: test
+
+# 报告类型：默认 allure，若设为 tm 则生成 tmreport 报告
+REPORT_TYPE:
+  type: allure
+
+# Jenkins配置（查询构建编号、报告链接，用于钉钉/飞书通知增强）
+# url 需为同事可访问的地址；部署到公司服务器后替换为服务器地址即可，代码无需改动
+JENKINS:
+  url: http://127.0.0.1:8080
+  username: admin
+  password: '123456'  # 必须加引号，否则 YAML 解析为整数，python-jenkins 会报 encode 错误
+  job_name: web_auto_project_task  # 测试任务名称
+  timeout: 60
+
+# 钉钉通知配置
+DING_DING:
+  WEBHOOK_URL: https://oapi.dingtalk.com/robot/send?access_token=895a7c429e8bd54536123be9d1d17f24c8a684411c3f438ce1a7b84a716b586f
+  SECRET: SECcd03007f37a55da9144cbc89a98313377a61e64db36c7f591a7cf3265fe55c93
+
+# 飞书通知配置
+FEI_SHU:
+  WEBHOOK_URL: https://open.feishu.cn/open-apis/bot/v2/hook/2e2519c6-dc12-4561-838b-43ab30cbc1ab
+  SECRET: TgVLNMn3ZC4K6xMb1Truc
+
+
