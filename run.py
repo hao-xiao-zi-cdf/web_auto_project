@@ -6,21 +6,14 @@ from utils.recordlog import logs
 
 if __name__ == '__main__':
 
-    # JUnit XML 报告路径：Jenkins 构建时邮件模板靠它提取用例统计信息（总数/成功/失败/跳过）
-    # 单独存放在项目根目录的 report 文件夹（见 setting.py 的 FILE_PATH['RESULTXML']），
-    # 与 allure 原始数据目录 reports 分开，互不影响；每次运行前清空该目录，避免旧文件残留
+    # JUnit XML 报告路径：Jenkins 邮件模板靠它提取用例统计信息，单独存放在 report 目录，
+    # 与 allure 原始数据目录 reports 分开；每次运行前重建该目录，避免旧文件残留
     result_xml_dir = setting.FILE_PATH['RESULTXML']
-    if os.path.exists(result_xml_dir):
-        shutil.rmtree(result_xml_dir)
+    shutil.rmtree(result_xml_dir, ignore_errors=True)
     os.makedirs(result_xml_dir)
     result_xml = os.path.join(result_xml_dir, 'results.xml')
 
-    # 执行前先显式清空 reports 目录，避免上一次构建的残留结果叠加进本次报告（双保险，不依赖 --clean-alluredir）
-    if os.path.exists('./reports'):
-        shutil.rmtree('./reports')
-        logs.info("已清空上次构建残留的 reports 目录")
-
-    # 运行测试用例(自动清理 allure-results)
+    # 运行测试用例（--clean-alluredir 会在执行前自动清空 reports 目录，无需手动清理）
     logs.info("开始执行测试用例...")
     pytest.main(['--alluredir', './reports', '--clean-alluredir', f'--junitxml={result_xml}'])
 
