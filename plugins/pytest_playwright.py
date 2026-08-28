@@ -29,7 +29,6 @@ from playwright.sync_api import (
 )
 from slugify import slugify
 import tempfile
-import allure
 from utils.recordlog import logs
 
 artifacts_folder = tempfile.TemporaryDirectory(prefix="playwright-pytest-")
@@ -144,6 +143,51 @@ def _build_artifact_test_folder(
     return os.path.join(output_dir, slugify(request.node.nodeid), folder_or_file_name)
 
 
+def save_video_artifacts(
+        pages: List[Page], pytestconfig: Any, request: pytest.FixtureRequest
+) -> None:
+    """
+    公共录屏保存函数，供插件 page fixture 和 cases/conftest.py 的 unlogin_page 复用，
+    避免两处重复写同一套录屏逻辑。
+
+    处理流程：
+    1. 根据 --video 配置和用例是否失败，判断是否需要保留录屏；
+    2. 逐个页面保存录屏文件到 test-results/<用例ID>/ 目录；
+    3. 把保存后的路径暂存到 request.node._video_artifacts，
+       由根 conftest.py 的 pytest_runtest_makereport 钩子在 teardown 阶段统一附加到 allure 用例主体
+       （不能在函数里直接 allure.attach，那样会挂到 after-fixture，报告正文看不到）。
+
+    注意：Playwright 的录屏文件只有在页面关闭后才落盘，
+    所以本函数必须在 page.close() 之后调用。
+
+    :param pages: 用例期间打开的页面列表（含弹窗页面），逐个尝试保存录屏
+    :param pytestconfig: pytest 配置对象，用于读取 --video 选项
+    :param request: fixture 请求对象，用于获取用例 nodeid（拼存储路径）并暂存录屏路径
+    """
+    # rep_call 缺失说明用例在 setup 阶段就出错，按失败处理（保留录屏）
+    failed = request.node.rep_call.failed if hasattr(request.node, "rep_call") else True
+    video_option = pytestconfig.getoption("--video")
+    preserve_video = video_option == "on" or (
+            failed and video_option == "retain-on-failure"
+    )
+    if not preserve_video:
+        return
+    for item_page in pages:
+        video = item_page.video
+        if not video:
+            continue
+        try:
+            video_path = video.path()
+            file_name = os.path.basename(video_path)
+            file_path = _build_artifact_test_folder(pytestconfig, request, file_name)
+            video.save_as(path=file_path)
+            logs.info(f"暂存用例录屏，等待 makereport 钩子附加到报告：{file_path}")
+            request.node._video_artifacts = getattr(request.node, "_video_artifacts", []) + [file_path]
+        except Error as e:
+            # 空视频捕获异常，仅记录警告日志，不影响用例结果
+            logs.warning(f"保存录屏失败：{file_name}，原因：{e}")
+
+
 @pytest.fixture(scope="session")
 def browser_context_args(
         pytestconfig: Any,
@@ -205,9 +249,7 @@ def context(
         pytestconfig: Any,
         request: pytest.FixtureRequest,
 ) -> Generator[BrowserContext, None, None]:
-    pages: List[Page] = []
     context = browser.new_context(**browser_context_args)
-    context.on("page", lambda page: pages.append(page))
 
     tracing_option = pytestconfig.getoption("--tracing")
     capture_trace = tracing_option in ["on", "retain-on-failure"]
@@ -237,55 +279,10 @@ def context(
         else:
             context.tracing.stop()
 
-    screenshot_option = pytestconfig.getoption("--screenshot")
-    logs.debug(f"截图配置：{screenshot_option}，用例是否失败：{failed}")
-    capture_screenshot = screenshot_option == "on" or (
-            failed and screenshot_option == "only-on-failure"
-    )
-    logs.debug(f"是否需要截图：{capture_screenshot}")
-    if capture_screenshot:
-        for index, page in enumerate(pages):
-            human_readable_status = "failed" if failed else "finished"
-            screenshot_path = _build_artifact_test_folder(
-                pytestconfig, request, f"test-{human_readable_status}-{index + 1}.png"
-            )
-            logs.info(f"保存用例截图：{screenshot_path}")
-            try:
-                page.screenshot(timeout=5000, path=screenshot_path)
-                # 把截图放入allure报告
-                allure.attach.file(screenshot_path,
-                                   name=f"{request.node.name}-{human_readable_status}-{index + 1}",
-                                   attachment_type=allure.attachment_type.PNG
-                                   )
-
-            except Error as e:
-                logs.warning(f"保存截图失败：{screenshot_path}，原因：{e}")
-
+    # 截图已改由 conftest.py 的 pytest_runtest_makereport 钩子在 call 阶段失败时采集并附加到用例主体，
+    # 录屏由 page fixture 保存后暂存路径、在 makereport 钩子的 teardown 阶段统一附加，
+    # 此处不再重复采集（会话级 fixture 无 rep_call，会误判为失败并产生垃圾附件）
     context.close()
-
-    video_option = pytestconfig.getoption("--video")
-    preserve_video = video_option == "on" or (
-            failed and video_option == "retain-on-failure"
-    )
-    if preserve_video:
-        for page in pages:
-            video = page.video
-            if not video:
-                continue
-            try:
-                video_path = video.path()
-                file_name = os.path.basename(video_path)
-                file_path = _build_artifact_test_folder(pytestconfig, request, file_name)
-                video.save_as(
-                    path=file_path
-                )
-                # 放入视频
-                allure.attach.file(file_path, name=f"{request.node.name}-{human_readable_status}-{index + 1}",
-                                   attachment_type=allure.attachment_type.WEBM)
-
-            except Error:
-                # Silent catch empty videos.
-                pass
 
 
 @pytest.fixture
@@ -294,61 +291,24 @@ def page(context: BrowserContext,
          request: pytest.FixtureRequest,
          ) -> Generator[Page, None, None]:
     pages: List[Page] = []
-    context.on("page", lambda page: pages.append(page))
+
+    def _on_page(page: Page) -> None:
+        pages.append(page)
+
+    context.on("page", _on_page)
 
     page = context.new_page()
     yield page
-    failed = request.node.rep_call.failed if hasattr(request.node, "rep_call") else True
-    # 截图判断
-    screenshot_option = pytestconfig.getoption("--screenshot")
-    capture_screenshot = screenshot_option == "on" or (
-            failed and screenshot_option == "only-on-failure"
-    )
-    logs.debug(f"是否需要截图：{capture_screenshot}")
-    if capture_screenshot:
-        for index, page in enumerate(pages):
-            human_readable_status = "failed" if failed else "finished"
-            screenshot_path = _build_artifact_test_folder(
-                pytestconfig, request, f"test-{human_readable_status}-{index + 1}.png"
-            )
-            logs.info(f"保存用例截图：{screenshot_path}")
-            try:
-                page.screenshot(timeout=5000, path=screenshot_path)
-                # 把截图放入allure报告
-                allure.attach.file(screenshot_path,
-                                   name=f"{request.node.name}-{human_readable_status}-{index + 1}",
-                                   attachment_type=allure.attachment_type.PNG
-                                   )
-
-            except Error as e:
-                logs.warning(f"保存截图失败：{screenshot_path}，原因：{e}")
-
+    # 收尾时移除监听器，避免向会话级 context 重复注册导致 pages 列表不断累积
+    context.remove_listener("page", _on_page)
+    # 截图已改由 conftest.py 的 pytest_runtest_makereport 钩子在 call 阶段失败时采集并附加到用例主体，
+    # fixture teardown 里的 attach 会挂到 after-fixture，报告正文看不到，因此这里不再截图
     page.close()
 
-    # 用例添加视频
-    video_option = pytestconfig.getoption("--video")
-    preserve_video = video_option == "on" or (
-            failed and video_option == "retain-on-failure"
-    )
-    if preserve_video:
-        for page in pages:
-            video = page.video
-            if not video:
-                continue
-            try:
-                video_path = video.path()
-                file_name = os.path.basename(video_path)
-                file_path = _build_artifact_test_folder(pytestconfig, request, file_name)
-                video.save_as(
-                    path=file_path
-                )
-                # 放入视频
-                allure.attach.file(file_path, name=f"{request.node.name}-{human_readable_status}-{index + 1}",
-                                   attachment_type=allure.attachment_type.WEBM)
-
-            except Error:
-                # Silent catch empty videos.
-                pass
+    # 保存录屏并暂存路径（公共逻辑见 save_video_artifacts 函数），
+    # 由 conftest.py 的 makereport 钩子在 teardown 阶段统一附加到用例主体；
+    # 必须在 page.close() 之后，录屏文件才会落盘
+    save_video_artifacts(pages, pytestconfig, request)
 
 
 @pytest.fixture(scope="session")

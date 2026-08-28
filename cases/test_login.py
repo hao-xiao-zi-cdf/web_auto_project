@@ -1,6 +1,7 @@
 from pages.login_page import LoginPage
 from playwright.sync_api import expect, Page
 import pytest
+from utils.recordlog import logs
 
 
 class TestLogin:
@@ -13,15 +14,15 @@ class TestLogin:
         :param unlogin_page: 独立上下文
         :return: None
         """
-        print("for each--start: 打开新页面访问登录页")
+        logs.info("用例前置：打开新页面访问登录页")
         self.login = LoginPage(unlogin_page)
         self.login.navigate()
         yield
-        print("for each--end: 后置操作")
+        logs.info("用例后置：执行后置操作")
 
     def test_01_login_success(self):
         """登录成功-已注册的1位非特殊字符账号 + 6位正确密码"""
-
+        logs.info("输入1位账号 + 6位密码进行登录")
         # 进行登录操作
         self.login.login("p","123456")
         # 断言
@@ -30,7 +31,7 @@ class TestLogin:
 
     def test_02_login_success(self):
         """登录成功-已注册的10位非特殊字符账号 + 10位正确密码"""
-
+        logs.info("输入10位账号 + 10位密码进行登录")
         # 登录操作
         self.login.login("123456789p","1234567890")
         # 断言
@@ -39,7 +40,7 @@ class TestLogin:
 
     def test_03_login_success(self):
         """登录成功-已注册的30位非特殊字符账号 + 16位正确密码"""
-
+        logs.info("输入30位账号 + 16位密码进行登录")
         # 登录操作
         self.login.login("123456789p123456789p123456789p", "1234567890123456")
         # 断言
@@ -51,6 +52,7 @@ class TestLogin:
 
         # 登录操作
         self.login.login("", "123456")
+        logs.info("已提交空用户名，开始校验提示信息")
         # 断言
         expect(self.login.locator_username_tip1).to_be_visible()
         expect(self.login.locator_username_tip1).to_contain_text("不能为空")
@@ -62,6 +64,7 @@ class TestLogin:
 
         # 登录操作
         self.login.fill_username("123456789p123456789p123456789ps")
+        logs.info("已输入31位超长用户名，开始校验提示信息")
         # 断言
         expect(self.login.locator_username_tip2).to_be_visible()
         expect(self.login.locator_username_tip2).to_contain_text("用户名称1-30位字符")
@@ -73,6 +76,7 @@ class TestLogin:
         # 登录操作
         self.login.fill_username("-------")
         self.login.fill_password("123456")
+        logs.info("已输入特殊字符用户名，开始校验提示信息")
         # 断言
         expect(self.login.locator_username_tip3).to_be_visible()
         expect(self.login.locator_username_tip3).to_contain_text("用户名称不能有特殊字符,请用中英文数字_")
@@ -84,6 +88,7 @@ class TestLogin:
         # 登录操作
         self.login.fill_username("p")
         self.login.fill_password("12345")
+        logs.info("已输入5位短密码，开始校验提示信息")
         # 断言
         expect(self.login.locator_password_tip2).to_be_visible()
         expect(self.login.locator_password_tip2).to_contain_text("密码6-16位字符")
@@ -95,6 +100,7 @@ class TestLogin:
         # 登录操作
         self.login.fill_username("p")
         self.login.fill_password("12312312312312312")
+        logs.info("已输入17位长密码，开始校验提示信息")
         # 断言
         expect(self.login.locator_password_tip2).to_be_visible()
         expect(self.login.locator_password_tip2).to_contain_text("密码6-16位字符")
@@ -105,6 +111,7 @@ class TestLogin:
 
         # 登录操作
         self.login.login("p", "")
+        logs.info("已提交空密码，开始校验提示信息")
         # 断言
         expect(self.login.locator_password_tip1).to_be_visible()
         expect(self.login.locator_password_tip1).to_contain_text("不能为空")
@@ -117,6 +124,7 @@ class TestLogin:
         # 登录操作
         self.login.fill_username("p")
         self.login.fill_password("------")
+        logs.info("已输入特殊字符密码，开始校验提示信息")
         # 断言
         expect(self.login.locator_password_tip3).to_be_visible()
         expect(self.login.locator_password_tip3).to_contain_text("不能有特殊字符,请用中英文数字下划线")
@@ -127,6 +135,7 @@ class TestLogin:
 
         # 登录操作
         self.login.login("p", "123321")
+        logs.info("已提交错误密码，开始校验错误提示")
         # 断言
         expect(self.login.locator_login_error).to_be_visible()
         expect(self.login.locator_login_error).to_contain_text("账号或密码不正确！")
@@ -134,7 +143,7 @@ class TestLogin:
 
     def test_12_login_link(self):
         """检测跳转链接"""
-
+        logs.info("开始检测注册页跳转链接")
         # 断言
         expect(self.login.locator_register_link).to_have_attribute('href', 'register.html')
         # 点击

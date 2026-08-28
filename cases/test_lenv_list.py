@@ -3,6 +3,7 @@ import pytest
 import uuid
 from mocks import mock_api
 from pages.list_env_page import EnvListPage
+from utils.recordlog import logs
 
 
 class TestEnvList:
@@ -10,11 +11,11 @@ class TestEnvList:
 
     @pytest.fixture(autouse=True)
     def start_for_each(self, pre_login, page: Page):
-        print("for each--start: 打开环境列表页")
+        logs.info("用例前置：打开环境列表页")
         self.env = EnvListPage(page)
         self.env.navigate()
         yield
-        print("for each--end: 后置操作")
+        logs.info("用例后置：执行后置操作")
 
     def test_01_add_env_success_normal(self):
         """新增环境成功-环境名称[1,40位非特殊字符未存在] + 环境地址http://开头<=200字符 + 简要描述<=100字符"""
@@ -26,6 +27,7 @@ class TestEnvList:
         self.env.add_env(uuid.uuid4().hex[:10], "http://test_env.com", "this is a test env")
         # mock 返回200 成功
         self.env.page.route(**mock_api.mock_add_env_200)
+        logs.info("已填写合法环境信息并 mock 返回200，校验模态框关闭")
         self.env.click_modal_save()
         # 验证新增环境成功
         expect(self.env.locator_add_modal).not_to_be_visible()
@@ -36,6 +38,7 @@ class TestEnvList:
         # 断言模态框不隐藏
         expect(self.env.locator_add_modal).not_to_be_hidden()
         self.env.add_env("ab", "http://test_env.com", "this is a test env")
+        logs.info("已输入2位环境名并提交保存，校验新增环境成功")
         self.env.click_modal_save()
         # 验证新增环境成功
         expect(self.env.locator_add_modal).not_to_be_visible()
@@ -46,6 +49,7 @@ class TestEnvList:
         # 断言模态框不隐藏
         expect(self.env.locator_add_modal).not_to_be_hidden()
         self.env.add_env("", "http://test_env.com", "this is a test env")
+        logs.info("已提交空环境名，校验不能为空提示")
         self.env.click_modal_save()
         # 验证新增环境失败
         expect(self.env.locator_modal_env_tip1).to_be_visible()
@@ -57,6 +61,7 @@ class TestEnvList:
         # 断言模态框不隐藏
         expect(self.env.locator_add_modal).not_to_be_hidden()
         self.env.add_env("a" * 50, "http://test_env.com", "this is a test env")
+        logs.info("已输入50位超长环境名，校验长度提示")
         expect(self.env.locator_modal_env_tip2).to_be_visible()
         expect(self.env.locator_modal_env_tip2).to_contain_text('模块名称1-40位字符')
 
@@ -66,6 +71,7 @@ class TestEnvList:
         # 断言模态框不隐藏
         expect(self.env.locator_add_modal).not_to_be_hidden()
         self.env.add_env("!@#$%^", "http://test_env.com", "this is a test env")
+        logs.info("已输入特殊字符环境名，校验特殊字符提示")
         expect(self.env.locator_modal_env_tip3).to_be_visible()
         expect(self.env.locator_modal_env_tip3).to_contain_text('模块名称不能有特殊字符')
 
@@ -77,6 +83,7 @@ class TestEnvList:
         self.env.add_env("test", "http://test_env.com", "this is a test env")
         # mock模拟返回400
         self.env.page.route(**mock_api.mock_add_env_400)
+        logs.info("已 mock 新增环境接口返回400，校验重复提示弹窗")
         self.env.click_modal_save()
         # 验证弹窗信息
         expect(self.env.locator_boot_box).to_be_visible()
@@ -86,6 +93,7 @@ class TestEnvList:
     @pytest.mark.parametrize("address", ["httppp", "httpx://test_env.com", "httpsx://test_env.com"])
     def test_07_add_env_fail_address_no_http(self, address):
         """新增环境失败-环境地址非http://或https://开头"""
+        logs.info(f"参数化输入非法环境地址：{address}")
         self.env.click_add_env()
         expect(self.env.locator_add_modal).not_to_be_hidden()
         self.env.add_env(uuid.uuid4().hex[:10], address, "this is a test env")
@@ -99,6 +107,7 @@ class TestEnvList:
         self.env.click_add_env()
         expect(self.env.locator_add_modal).not_to_be_hidden()
         self.env.add_env(uuid.uuid4().hex[:10], "", "this is a test env")
+        logs.info("已提交空环境地址，校验不能为空提示")
         self.env.click_modal_save()
         # 验证
         expect(self.env.locator_modal_address_tip1).to_be_visible()
@@ -109,6 +118,7 @@ class TestEnvList:
         self.env.click_add_env()
         expect(self.env.locator_add_modal).not_to_be_hidden()
         self.env.add_env(uuid.uuid4().hex[:10], "http://test_env.com" * 30, "this is a test env")
+        logs.info("已输入超过200字符的环境地址，校验长度提示")
         # 验证
         expect(self.env.locator_modal_address_tip2).to_be_visible()
         expect(self.env.locator_modal_address_tip2).to_contain_text('模块名称1-200位字符')
@@ -118,6 +128,7 @@ class TestEnvList:
         self.env.click_add_env()
         expect(self.env.locator_add_modal).not_to_be_hidden()
         self.env.add_env(uuid.uuid4().hex[:10], "http://test_env.com", "this is a test env" * 10)
+        logs.info("已输入超过100字符的简要描述，校验长度提示")
         # 验证
         expect(self.env.locator_modal_simple_desc_tip).to_be_visible()
         expect(self.env.locator_modal_simple_desc_tip).to_contain_text('最大100位字符')
@@ -127,6 +138,7 @@ class TestEnvList:
         self.env.click_add_env()
         expect(self.env.locator_add_modal).not_to_be_hidden()
         self.env.add_env(uuid.uuid4().hex[:10], "http://test_env.com", "this is a test env")
+        logs.info("已填写环境信息，点击取消按钮校验模态框关闭")
         # 点击取消按钮
         self.env.click_modal_dismiss()
         # 验证

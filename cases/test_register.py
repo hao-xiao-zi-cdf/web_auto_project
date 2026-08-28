@@ -2,6 +2,7 @@ from pages.register_page import RegisterPage
 from playwright.sync_api import expect,Page
 import pytest
 import uuid
+from utils.recordlog import logs
 
 class TestRegister:
     """注册功能"""
@@ -13,17 +14,18 @@ class TestRegister:
         :param unlogin_page: 独立上下文
         :return: None
         """
-        print("for each--start: 打开新页面访问注册页")
+        logs.info("用例前置：打开新页面访问注册页")
         self.register = RegisterPage(unlogin_page)
         self.register.navigate()
         yield
-        print("for each--end: 后置操作")
+        logs.info("用例后置：执行后置操作")
 
     def test_01_register_success(self):
         """注册成功-未注册的1位非特殊字符账号 + 6位正确密码"""
         
         # 进行注册操作
         self.register.register(uuid.uuid4().hex[:1], "123456")
+        logs.info("已提交1位账号 + 6位密码进行注册")
         # 断言
         expect(self.register.page).to_have_title("首页")
         expect(self.register.page).to_have_url("index.html")
@@ -33,6 +35,7 @@ class TestRegister:
         
         # 注册操作
         self.register.register(uuid.uuid4().hex[:10], "1234567890")
+        logs.info("已提交10位账号 + 10位密码进行注册")
         # 断言
         expect(self.register.page).to_have_title("首页")
         expect(self.register.page).to_have_url("index.html")
@@ -42,6 +45,7 @@ class TestRegister:
 
         # 注册操作
         self.register.register(uuid.uuid4().hex[:30], "1234567890123456")
+        logs.info("已提交30位账号 + 16位密码进行注册")
         # 断言
         expect(self.register.page).to_have_title("首页")
         expect(self.register.page).to_have_url("/index.html")
@@ -51,6 +55,7 @@ class TestRegister:
 
         # 注册操作
         self.register.register("", "123456")
+        logs.info("已提交空用户名，开始校验提示信息")
         # 断言
         expect(self.register.locator_username_tip1).to_be_visible()
         expect(self.register.locator_username_tip1).to_contain_text("不能为空")
@@ -62,6 +67,7 @@ class TestRegister:
 
         # 注册操作
         self.register.fill_username("123456789p123456789p123456789ps")
+        logs.info("已输入31位超长用户名，开始校验提示信息")
         # 断言
         expect(self.register.locator_username_tip2).to_be_visible()
         expect(self.register.locator_username_tip2).to_contain_text("用户名称1-30位字符")
@@ -73,6 +79,7 @@ class TestRegister:
         # 注册操作
         self.register.fill_username("------")
         self.register.fill_password("123456")
+        logs.info("已输入特殊字符用户名，开始校验提示信息")
         # 断言
         expect(self.register.locator_username_tip3).to_be_visible()
         expect(self.register.locator_username_tip3).to_contain_text("用户名称不能有特殊字符,请用中英文数字_")
@@ -84,6 +91,7 @@ class TestRegister:
         # 注册操作
         self.register.fill_username("i")
         self.register.fill_password("12345")
+        logs.info("已输入5位短密码，开始校验提示信息")
         # 断言
         expect(self.register.locator_password_tip2).to_be_visible()
         expect(self.register.locator_password_tip2).to_contain_text("密码6-16位字符")
@@ -95,6 +103,7 @@ class TestRegister:
         # 注册操作
         self.register.fill_username("g")
         self.register.fill_password("12312312312312312")
+        logs.info("已输入17位长密码，开始校验提示信息")
         # 断言
         expect(self.register.locator_password_tip2).to_be_visible()
         expect(self.register.locator_password_tip2).to_contain_text("密码6-16位字符")
@@ -105,6 +114,7 @@ class TestRegister:
 
         # 注册操作
         self.register.register("w", "")
+        logs.info("已提交空密码，开始校验提示信息")
         # 断言
         expect(self.register.locator_password_tip1).to_be_visible()
         expect(self.register.locator_password_tip1).to_contain_text("不能为空")
@@ -117,6 +127,7 @@ class TestRegister:
         # 注册操作
         self.register.fill_username("i")
         self.register.fill_password("------")
+        logs.info("已输入特殊字符密码，开始校验提示信息")
         # 断言
         expect(self.register.locator_password_tip3).to_be_visible()
         expect(self.register.locator_password_tip3).to_contain_text("不能有特殊字符,请用中英文数字下划线")
@@ -127,6 +138,7 @@ class TestRegister:
 
         # 注册操作
         self.register.register("p", "123321")
+        logs.info("已提交已注册账号，开始校验错误提示")
         # 断言
         expect(self.register.locator_register_error).to_be_visible()
         expect(self.register.locator_register_error).to_contain_text("用户名已存在或不合法！")
@@ -134,7 +146,7 @@ class TestRegister:
 
     def test_12_login_link(self):
         """检测跳转链接"""
-
+        logs.info("开始检测登录页跳转链接")
         # 断言
         expect(self.register.locator_login_link).to_have_attribute("href", "login.html")
         # 点击

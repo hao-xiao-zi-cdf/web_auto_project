@@ -1,7 +1,9 @@
+import os
 import allure
 import pytest
 from pytest import Item
 from typing import Any, Dict
+from slugify import slugify
 from config.setting import DD_MSG, FS_MSG
 from config.setting import JENKINS_ENHANCE
 from utils.dingRobot import send_dd_msg
@@ -18,6 +20,49 @@ def pytest_runtest_call(item: Item):
     # 动态添加测试用例的title标题allure.title()
     if item.function.__doc__:
         allure.dynamic.title(item.function.__doc__)
+
+
+@pytest.hookimpl(hookwrapper=True)
+def pytest_runtest_makereport(item, call):
+    """
+    把失败用例的截图/录屏附加到 allure 用例主体。
+    fixture teardown 里的 attach 只会挂到 after-fixture（container json），
+    报告正文看不到，因此统一在这里附加：
+    - call 阶段：用例失败时页面尚未关闭，直接截图并附加到用例主体；
+    - teardown 阶段：录屏文件已由 fixture 保存并暂存路径，此处统一附加到用例主体。
+    """
+    report = (yield).get_result()
+    if report.when == "call" and report.failed:
+        screenshot_option = item.config.getoption("--screenshot")
+        if screenshot_option in ("on", "only-on-failure"):
+            page = item.funcargs.get("page") or item.funcargs.get("unlogin_page")
+            if page is not None:
+                try:
+                    screenshot_path = os.path.join(
+                        item.config.getoption("--output"),
+                        slugify(item.nodeid),
+                        "test-failed-1.png",
+                    )
+                    page.screenshot(timeout=5000, path=screenshot_path)
+                    logs.info(f"用例失败，保存截图到用例主体：{screenshot_path}")
+                    allure.attach.file(
+                        screenshot_path,
+                        name=f"{item.name}-failed-1",
+                        attachment_type=allure.attachment_type.PNG,
+                    )
+                except Exception as e:
+                    logs.warning(f"失败用例保存截图失败：{e}")
+    elif report.when == "teardown":
+        for video_path in getattr(item, "_video_artifacts", []):
+            try:
+                allure.attach.file(
+                    video_path,
+                    name=os.path.basename(video_path),
+                    attachment_type=allure.attachment_type.WEBM,
+                )
+                logs.info(f"附加用例录屏到报告主体：{video_path}")
+            except Exception as e:
+                logs.warning(f"附加用例录屏失败：{video_path}，原因：{e}")
 
 
 @pytest.fixture(scope="session")
